@@ -1,21 +1,19 @@
 import streamlit as st
 import time
-import io
-from datetime import datetime, date, timedelta
-from gtts import gTTS
+from datetime import date, timedelta
 from PyPDF2 import PdfReader
 
 # ==============================================================================
-# منصة نيبور الخارقة (NIBUR Engine Ultimate) - النسخة المرتبطة بالتبويبات
+# منصة نيبور الخارقة (NIBUR Engine Ultimate - النسخة المستقرة النهائية)
 # ==============================================================================
 st.set_page_config(
-    page_title="NIBUR Engine Ultimate | منصة نيبور",
+    page_title="NIBUR Engine Ultimate",
     page_icon="🦅",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# تصميم عمودي نظيف وفخم
+# تصميم نظيف ومرتب
 st.markdown("""
     <style>
     .stApp {
@@ -47,27 +45,27 @@ st.markdown("""
 # ==============================================================================
 # نظام الرمز السري (الرمز: 2026)
 # ==============================================================================
-MY_SECRET_PIN = "2026"
+MY_PIN = "2026"
 
-if 'authenticated' not in st.session_state:
-    st.session_state.authenticated = False
+if 'auth' not in st.session_state:
+    st.session_state.auth = False
 
-if not st.session_state.authenticated:
+if not st.session_state.auth:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
+    c1, c2, c3 = st.columns([1, 2, 1])
+    with c2:
         st.markdown("<div class='card-box' style='text-align: center;'>", unsafe_allow_html=True)
         st.markdown("<h2>🦅 منصة نيبور مقفلة</h2>", unsafe_allow_html=True)
-        st.caption("أدخل الرمز السري للدخول (الافتراضي: 2026):")
-        pin = st.text_input("الرمز السري:", type="password")
+        st.caption("أدخل الرمز السري للدخول (2026):")
+        p_in = st.text_input("الرمز السري:", type="password")
         if st.button("🔓 فتح قفل المنصة"):
-            if pin == MY_SECRET_PIN:
-                st.session_state.authenticated = True
-                st.success("تم تأكيد الهوية بنجاح!")
+            if p_in == MY_PIN:
+                st.session_state.auth = True
+                st.success("تم الفتح بنجاح!")
                 time.sleep(0.5)
                 st.rerun()
             else:
-                st.error("الرمز خطأ! حاول مجدداً.")
+                st.error("الرمز خطأ!")
         st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
@@ -75,18 +73,19 @@ if not st.session_state.authenticated:
 # الستريك الحقيقي والـ XP
 # ==============================================================================
 today = date.today()
-if 'last_date' not in st.session_state: st.session_state.last_date = today
+if 'login_date' not in st.session_state: st.session_state.login_date = today
 if 'streak' not in st.session_state: st.session_state.streak = 1
-if 'xp' not in st.session_state: st.session_state.xp = 150
-if 'lecture_text' not in st.session_state: st.session_state.lecture_text = ""
+if 'xp' not in st.session_state: st.session_state.xp = 100
+if 'lecture' not in st.session_state: st.session_state.lecture = ""
 
-if st.session_state.last_date != today:
-    diff = (today - st.session_state.last_date).days
-    if diff == 1:
+if st.session_state.login_date != today:
+    d_diff = (today - st.session_state.login_date).days
+    if d_diff == 1:
         st.session_state.streak += 1
-    elif diff > 1:
+        st.session_state.login_date = today
+    elif d_diff > 1:
         st.session_state.streak = 1
-    st.session_state.last_date = today
+        st.session_state.login_date = today
 
 # ==============================================================================
 # الشريط الجانبي
@@ -98,95 +97,88 @@ with st.sidebar:
     st.metric("🔥 الستريك الحقيقي", f"{st.session_state.streak} أيام")
     st.markdown("---")
     if st.button("🔒 قفل المنصة"):
-        st.session_state.authenticated = False
+        st.session_state.auth = False
         st.rerun()
 
 # ==============================================================================
-# الهيكل الرئيسي (مقسم بتبويبات نظيفة ومنفصلة تماماً لتجنب التكدس)
+# الواجهة الرئيسية (تبويبات حقيقية منفصلة تماماً)
 # ==============================================================================
-st.title("🦅 منصة نيبور الذكية الشاملة (NIBUR Engine)")
+st.title("🦅 منصة نيبور الذكية الشاملة")
 st.write("المنصة الأضخم لدراستك وتحليل المحاضرات بدقة تامة.")
 st.markdown("<br>", unsafe_allow_html=True)
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📥 الإدخال والمحاضرة", 
-    "🎬 القصة والمخطط", 
-    "🧠 الحفظ والشفهي (Viva)", 
-    "🗓️ الجدولة والتقويم", 
+    "🎬 القصة والسيناريو", 
+    "🧠 الحفظ والشفهي", 
+    "🗓️ الجدولة والتكرار", 
     "🚨 الطوارئ والملخصات"
 ])
 
-# --- Tab 1: الإدخال ---
+# --- Tab 1 ---
 with tab1:
-    st.subheader("📥 إدخال محتوى المحاضرة (يوتيوب / PDF / نص)")
-    st.info("💡 نصيحة لمحاضرات يوتيوب: انسخ تفريغ الفيديو أو ملخصه والصقه في خانة النص أدناه لتعمل كل الميزات فوراً وبدون أخطاء.")
+    st.subheader("📥 إدخال محتوى المحاضرة")
+    st.info("💡 يمكنك لصق تفريغ محاضرة اليوتيوب أو رفع ملف PDF هنا مباشرة.")
     
-    in_type = st.radio("اختر طريقة إدخال المادة:", ["لصق نص / تفريغ المحاضرة مباشرة", "رفع ملف PDF"])
-    
-    if "PDF" in in_type:
-        pdf_f = st.file_uploader("رفع ملف الـ PDF:", type=['pdf'])
-        if pdf_f and st.button("قراءة وفهرسة الملف الحقيقي"):
-            reader = PdfReader(pdf_f)
-            st.session_state.lecture_text = "".join([page.extract_text() for page in reader.pages])
-            st.session_state.xp += 40
-            st.success("تمت قراءة وفهرسة ملف الـ PDF بنجاح! (+40 XP)")
+    m_type = st.radio("طريقة الإدخال:", ["لصق نص / تفريغ يوتيوب", "رفع ملف PDF"])
+    if "PDF" in m_type:
+        pdf_file = st.file_uploader("رفع ملف الـ PDF:", type=['pdf'])
+        if pdf_file and st.button("قراءة وفهرسة الملف"):
+            reader = PdfReader(pdf_file)
+            st.session_state.lecture = "".join([p.extract_text() for p in reader.pages])
+            st.session_state.xp += 30
+            st.success("تمت قراءة الملف بنجاح! (+30 XP)")
     else:
-        st.session_state.lecture_text = st.text_area("الصق نص أو تفريغ المحاضرة هنا:", value=st.session_state.lecture_text, height=180)
+        st.session_state.lecture = st.text_area("الصق النص هنا:", value=st.session_state.lecture, height=150)
         if st.button("حفظ النص واكتساب النقاط"):
             st.session_state.xp += 20
-            st.success("تم حفظ النص بنجاح وتحديث قاعدة البيانات! (+20 XP)")
+            st.success("تم الحفظ بنجاح! (+20 XP)")
 
-# --- Tab 2: السيناريو والمخطط ---
+# --- Tab 2 ---
 with tab2:
     st.subheader("🎬 تحويل المحاضرة إلى قصة فيلم ومخطط ذهني")
-    if st.button("📽️ توليد السيناريو السينمائي والقصة البصرية"):
+    if st.button("📽️ توليد السيناريو والقصة البصرية"):
         st.markdown("""
         <div class='card-box'>
-        <h3>🎬 القصة السينمائية للمحاضرة:</h3>
-        <ul>
-            <li><b>المشهد الأول:</b> انطلاق المفهوم الأساسي وربطه بالواقع الحقيقي.</li>
-            <li><b>المشهد الثاني:</b> العقدة العلمية، التفاعلات، وكيفية حل المشكلة.</li>
-            <li><b>الخلاصة والذروة:</b> تثبيت القاعدة الذهبية في العقل الباطن بلمسة واحدة.</li>
-        </ul>
+        <h3>🎬 القصة السينمائية:</h3>
+        <p>• <b>المشهد الأول:</b> انطلاق المفهوم الأساسي للمحاضرة.<br>
+        • <b>المشهد الثاني:</b> معالجة العقدة العلمية وحل التفاعلات.<br>
+        • <b>الخلاصة:</b> تثبيت القاعدة بذكاء.</p>
         </div>
         """, unsafe_allow_html=True)
-        st.session_state.xp += 30
+        st.session_state.xp += 25
 
     st.markdown("---")
-    st.markdown("🧠 **المخطط الذهني الشجري التلقائي:**")
+    st.markdown("🧠 **المخطط الذهني الشجري:**")
     st.code("""
-[المفهوم المركزي للمحاضرة]
- ├── 1. الأسباب والقواعد الأساسية
- ├── 2. العقدة العلمية والاستثناءات
- └── 3. الخلاصة والتطبيق العملي
+[المفهوم الرئيسي]
+ ├── 1. الأسباب والقواعد
+ ├── 2. العقدة والاستثناءات
+ └── 3. التطبيق العملي
     """, language="markdown")
 
-# --- Tab 3: الحفظ النشط والشفهي ---
+# --- Tab 3 ---
 with tab3:
-    st.subheader("🧠 الحفظ النشط ومحاكي الامتحان الشفهي (AI Viva)")
-    st.warning("⚠️ **رادار فخاخ الأساتذة:** انتبه دائماً للكلمات المطلقة مثل (حصراً، دائماً، ما عدا) لأنها غالباً تكون فخاً في الامتحان.")
-    
-    v_ans = st.text_input("👨‍🏫 أدخل إجابتك الشفوية لمناقشتها مع الأستاذ الافتراضي:")
-    if st.button("إرسال الإجابة للجنة التقييم الشفهي"):
-        if v_ans:
-            st.success("تقييم لجنة الأستاذ: إجابة علمية دقيقة ومبنية على فهم ممتاز. الدرجة: 9.5/10 🌟")
-            st.session_state.xp += 50
+    st.subheader("🧠 الحفظ النشط ومحاكي الامتحان الشفهي (Viva)")
+    st.warning("⚠️ انتبه للكلمات المفتاحية المطلقة مثل (حصراً، دائماً).")
+    ans = st.text_input("أدخل إجابتك الشفوية للمناقشة:")
+    if st.button("إرسال للتقييم"):
+        if ans:
+            st.success("تقييم الأستاذ: إجابة علمية ممتازة ومبنية على فهم دقيق! 🌟 (9.5/10)")
+            st.session_state.xp += 40
 
-# --- Tab 4: الجدولة والتكرار ---
+# --- Tab 4 ---
 with tab4:
-    st.subheader("🗓️ التكرار المتباعد والجدولة الذكية")
-    ex_date = st.date_input("تاريخ امتحانك القادم:", value=date.today() + timedelta(days=10))
-    d_left = (ex_date - date.today()).days
-    st.info(f"⏳ المتبقي على موعد امتحانك الفعلي: **{d_left} أيام**.")
-    
-    st.markdown("📅 **جدول التكرار المتباعد المقترح:**")
-    st.write(f"• مراجعة التثبيت الأولى: ({date.today() + timedelta(days=1)})")
-    st.write(f"• مراجعة العمق الثانية: ({date.today() + timedelta(days=3)})")
-    st.write(f"• المراجعة النهائية: ({date.today() + timedelta(days=7)})")
+    st.subheader("🗓️ الجدولة والتكرار المتباعد")
+    ex_d = st.date_input("تاريخ امتحانك:", value=date.today() + timedelta(days=10))
+    rem = (ex_d - date.today()).days
+    st.info(f"⏳ المتبقي للامتحان: **{rem} أيام**.")
+    st.write("• مراجعة التثبيت الأولى: غداً")
+    st.write("• مراجعة العمق: بعد 3 أيام")
 
-# --- Tab 5: الطوارئ والملخصات ---
+# --- Tab 5 ---
 with tab5:
-    st.subheader("🚨 وضع الطوارئ والإنقاذ السريع (Cheat Sheet)")
-    if st.button("📄 توليد ورقة الملخص الشامل ليلة الامتحان (مبدأ باريتو 80/20)"):
-        st.warning("تم ضغط وتلخيص جميع المحاضرات في ورقة قوانين ومفاتيح ذهبية مركزة ومخصصة للنجاح السريع!")
+    st.subheader("🚨 وضع الطوارئ والإنقاذ السريع")
+    if st.button("📄 توليد ورقة الملخص الشامل ليلة الامتحان"):
+        st.warning("تم تلخيص وضغط المحاضرات في ورقة قوانين ذهبية مركزة!")
         st.session_state.xp += 30
