@@ -1,240 +1,198 @@
 import streamlit as st
 import time
 import io
+from datetime import datetime, date, timedelta
 from gtts import gTTS
 from youtube_transcript_api import YouTubeTranscriptApi
 from PyPDF2 import PdfReader
 
-# --- 1. إعدادات الصفحة الاحترافية ---
+# ==============================================================================
+# 1. إعدادات الصفحة والتصميم العمودي العصري (NIBUR Vertical Glassmorphism)
+# ==============================================================================
 st.set_page_config(
-    page_title="Nexus AI - Ultimate Study & Life Ecosystem",
-    page_icon="⚡",
+    page_title="NIBUR Engine | منصة نيبور الخارقة",
+    page_icon="🦅",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- 2. التصميم العصري الفاخر (UI/UX Custom Styling) ---
+# تخصيص التصميم للواجهة العمودية النظيفة بدون تكدس أو تمطيط أفقي
 st.markdown("""
     <style>
-    /* الخلفية العامة للمنصة */
     .stApp {
-        background: radial-gradient(circle at 50% 10%, #111827 0%, #030712 100%);
-        color: #f9fafb;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        background-color: #080b11;
+        color: #e5e7eb;
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
     }
     
-    /* تنسيق الشريط الجانبي */
-    [data-testid="stSidebar"] {
-        background-color: #0b0f19;
-        border-right: 1px solid rgba(255, 255, 255, 0.08);
+    .vertical-section {
+        background: #111827;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     }
-
-    /* الأزرار الاحترافية بنين المتدرج */
+    
     .stButton > button {
         width: 100%;
         border-radius: 12px;
-        background: linear-gradient(135deg, #4f46e5 0%, #9333ea 100%);
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
         color: white;
         font-weight: 600;
-        padding: 12px 20px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 4px 20px rgba(79, 70, 229, 0.4);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 12px 18px;
+        border: none;
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+        transition: all 0.2s ease-in-out;
     }
     .stButton > button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 25px rgba(147, 51, 234, 0.6);
-        background: linear-gradient(135deg, #4338ca 0%, #7e22ce 100%);
-    }
-
-    /* البطاقات الزجاجية للإحصائيات */
-    .glass-card {
-        background: rgba(17, 24, 39, 0.7);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 16px;
-        padding: 18px;
-        text-align: center;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-    }
-    
-    /* تحسين شكل حقول الإدخال */
-    .stTextInput > div > div > input, .stTextArea > div > div > textarea {
-        background-color: rgba(17, 24, 39, 0.8);
-        color: #ffffff;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
+        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
     }
     </style>
 """, unsafe_allow_html=True)
 
-# --- 3. إدارة الذاكرة وحالة الجلسة (Session State) ---
-if 'xp' not in st.session_state: st.session_state.xp = 150
-if 'streak' not in st.session_state: st.session_state.streak = 14
-if 'level' not in st.session_state: st.session_state.level = 4
+# ==============================================================================
+# 2. إدارة الذاكرة والتاريخ للستريك الحقيقي والنقاط (Session State)
+# ==============================================================================
+today = date.today()
+
+if 'last_login' not in st.session_state: st.session_state.last_login = today
+if 'real_streak' not in st.session_state: st.session_state.real_streak = 1
+if 'xp' not in st.session_state: st.session_state.xp = 120
 if 'transcript' not in st.session_state: st.session_state.transcript = ""
 if 'notes' not in st.session_state: st.session_state.notes = []
-if 'weakness_bank' not in st.session_state: st.session_state.weakness_bank = ["آلية تضاعف الحمض النووي", "معادلات الديناميكا"]
+if 'weakness_bank' not in st.session_state: st.session_state.weakness_bank = []
+if 'chat_history' not in st.session_state: st.session_state.chat_history = []
+if 'exam_date' not in st.session_state: st.session_state.exam_date = today + timedelta(days=7)
 
-# --- 4. الشريط الجانبي العصري (Sidebar) ---
+# تحديث الستريك الفعلي بناءً على تواريخ الدخول
+if st.session_state.last_login != today:
+    delta = (today - st.session_state.last_login).days
+    if delta == 1:
+        st.session_state.real_streak += 1
+    elif delta > 1:
+        st.session_state.real_streak = 1
+    st.session_state.last_login = today
+
+# ==============================================================================
+# 3. الشريط الجانبي (Sidebar) - هوية نيبور وإحصائيات الطاقة واللغات
+# ==============================================================================
 with st.sidebar:
-    st.markdown("### ⚡ NEXUS OS")
-    st.caption("منصة العقل والإنتاجية المتقدمة")
+    st.markdown("<h2 style='text-align: center; color: #3b82f6;'>🦅 NIBUR ENGINE</h2>", unsafe_allow_html=True)
+    st.caption("<p style='text-align: center;'>المنصة الخارقة الشاملة لإدارة العقل والدراسة</p>", unsafe_allow_html=True)
+    st.markdown("---")
     
-    # بطاقات الإحصائيات الفخمة
-    col_s1, col_s2 = st.columns(2)
-    with col_s1:
-        st.markdown(f"""
-            <div class='glass-card'>
-                <h3 style='color: #c084fc; margin: 0; font-size: 22px;'>{st.session_state.xp}</h3>
-                <p style='color: #9ca3af; margin: 0; font-size: 11px;'>نقاط XP</p>
-            </div>
-        """, unsafe_allow_html=True)
-    with col_s2:
-        st.markdown(f"""
-            <div class='glass-card'>
-                <h3 style='color: #818cf8; margin: 0; font-size: 22px;'>{st.session_state.streak}🔥</h3>
-                <p style='color: #9ca3af; margin: 0; font-size: 11px;'>الستريك</p>
-            </div>
-        """, unsafe_allow_html=True)
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.info(f"🏆 الرتبة: محترف متميز (Level {st.session_state.level})")
+    lang = st.selectbox("🌐 لغة الشرح والنظام / Language", ["العربية (Arabic)", "English"])
+    is_ar = "العربية" in lang
     
     st.markdown("---")
-    language = st.selectbox("🌐 لغة المنصة / Language", ["العربية (Arabic)", "English"])
+    st.metric("🏆 نقاط XP الدوبامين", f"{st.session_state.xp} XP")
+    st.metric("🔥 الستريك الحقيقي (أيام)", f"{st.session_state.real_streak} أيام")
     
     st.markdown("---")
-    st.subheader("🛡️ أوضاع التركيز الفائق")
-    focus_guard = st.toggle("تفعيل درع حجب التشتت (Micro-Mode)", value=True)
-    exam_panic = st.checkbox("🚨 وضع الطوارئ ليلة الامتحان (الباريتو 80/20)")
-    if exam_panic:
-        st.warning("تم تفعيل فلترة المحتوى لاستخراج أهم 20% فقط من المادة.")
-
-# --- 5. الواجهة الرئيسة والتبويبات المتقدمة ---
-if "English" in language:
-    st.title("⚡ Nexus AI: Ultimate Life & Study Ecosystem")
-    st.write("Transform long YouTube lectures and heavy documents into cinematic stories, interactive audio, and smart quizzes.")
-else:
-    st.title("⚡ منصة نيكسوس الذكية الشاملة لإدارة العقل")
-    st.write("المنصة الأقوى هندسياً لتحويل المحاضرات الطويلة والبحوث إلى أفلام، ملخصات، أغاني تعليمية، وقهر التشتت نهائياً.")
-
-# تقسيم احترافي دقيق لـ 6 تبويبات رئيسية تغطي كافة الاحتياجات
-tabs = st.tabs([
-    "📥 1. المحلل الذكي والشامل",
-    "🎬 2. استديو القصص والأغاني",
-    "🧠 3. الحفظ النشط وفاينمان",
-    "📝 4. دفتر الملاحظات والمهام",
-    "⏱️ 5. مؤقت التركيز والتسويف",
-    "🏆 6. بنك الأخطاء والإحصائيات"
-])
-
-# --- TAB 1: المحلل الذكي ---
-with tabs[0]:
-    st.header("1. المحلل والماسح الضوئي للمحتوى")
-    input_source = st.radio("اختر مصدر الإدخال بدقة:", ["رابط يوتيوب (محاضرة كاملة)", "ملف PDF جامعي / كتاب", "نص حر / مقال أو بحث طويل"])
+    st.subheader("⚡ حالة الطاقة الذهنية")
+    energy_level = st.select_slider(
+        "مستوى طاقتك الحالية:",
+        options=["منخفضة جداً (تعب)", "متوسطة", "عالية (تركيز كامل)"],
+        value="عالية (تركيز كامل)"
+    )
     
-    if "يوتيوب" in input_source:
-        yt_input = st.text_input("أدخل رابط اليوتيوب:", placeholder="https://www.youtube.com/watch?v=...")
-        if st.button("🚀 سحب وتفريغ المحاضرة ذكياً"):
-            try:
-                if "v=" in yt_input:
-                    v_id = yt_input.split("v=")[-1].split("&")[0]
-                elif "youtu.be/" in yt_input:
-                    v_id = yt_input.split("youtu.be/")[-1].split("?")[0]
-                else:
-                    v_id = yt_input
-                
-                transcript_obj = YouTubeTranscriptApi.get_transcript(v_id)
-                st.session_state.transcript = " ".join([item['text'] for item in transcript_obj])
-                st.success("تم تفريغ وسحب المحاضرة بنجاح تام! +35 XP 🏆")
-                st.session_state.xp += 35
-            except Exception as e:
-                st.error("تعذر سحب التفريغ التلقائي لهذا الفيديو (قد يكون مقفلاً من المصدر). جرب لصق النص أو رفع PDF.")
-                
-    elif "PDF" in input_source:
-        pdf_upload = st.file_uploader("رفع ملف الـ PDF:", type=['pdf'])
-        if pdf_upload:
-            reader_obj = PdfReader(pdf_upload)
-            st.session_state.transcript = "".join([page.extract_text() for page in reader_obj.pages])
-            st.success("تم قراءة وفهرسة ملف الـ PDF بنجاح تام! +35 XP 🏆")
-            st.session_state.xp += 35
-    else:
-        st.session_state.transcript = st.text_area("الصق النص هنا للمراجعة والتحليل:", value=st.session_state.transcript, height=160)
+    st.markdown("---")
+    st.subheader("🚨 وضع الطوارئ والإنقاذ")
+    panic_mode = st.toggle("تفعيل Panic Mode (ليلة الامتحان - أهم 20%)")
+    if panic_mode:
+        st.error("تم استخراج زبدة المحاضرات وفق مبدأ باريتو (80/20)!")
 
-    if st.session_state.transcript:
-        st.subheader("📋 معاينة الملخص والتحليل:")
-        st.info(st.session_state.transcript[:900] + "...")
+# ==============================================================================
+# 4. الواجهة الرئيسية العمودية بالكامل (Vertical Multi-Feature Stack)
+# ==============================================================================
+title_text = "🦅 منصة نيبور الذكية الشاملة" if is_ar else "🦅 NIBUR Engine - All-in-One Platform"
+subtitle_text = "المنصة الأقوى لتحويل المحاضرات إلى قصص، أغاني، اختبارات، وجدول تكرار متباعد بدون تشتت" if is_ar else "The ultimate platform to turn lectures into stories, audio songs, active recall, and spaced repetition."
 
-# --- TAB 2: استديو القصص والأغاني ---
-with tabs[1]:
-    st.header("2. استديو الابتكار والتحويل الترفيهي (مضاد الملل)")
-    col_c1, col_c2 = st.columns(2)
-    
-    with col_c1:
-        st.subheader("🎬 تحويل لقصة سينمائية (Cinema Mode)")
-        if st.button("توليد السيناريو القصصي المشوق"):
-            st.markdown("""
-            * **المشهد التمهيدي:** تخيل أن الخلية هي عبارة عن مدينة مستقبلية تحرسها بوابات ذكية...
-            * **الصراع والذروة:** هجوم فجائي من الفيروسات وتأخر إرسال الشحنات العصبية...
-            * **الحل والإنقاذ:** تدخل طاقة الـ ATP السريعة لتفعيل خط الدفاع الأخير وإنقاذ الموقف بنجاح!
-            """)
-            st.session_state.xp += 40
-            
-    with col_c2:
-        st.subheader("🎤 أغنية المذاكرة التفاعلية (Songify)")
-        genre_choice = st.selectbox("اختر الطابع الموسيقي:", ["Rap تعليمي حماسي", "Pop هادئ وسريع", "Lo-Fi تركز عميق"])
-        if st.button("توليد الكلمات والملف الصوتي فوري"):
-            st.code(f"♪ ({genre_choice}) ♪\nافهم القاعدة ولا تحتار..\nكل مفهوم وله مسار..\nوالنجاح صار بيدك صار!")
-            tts_gen = gTTS(text="افهم القاعدة ولا تحتار، كل مفهوم وله مسار، والنجاح صار بيدك صار!", lang='ar')
-            audio_io_buff = io.BytesIO()
-            tts_gen.write_to_fp(audio_io_buff)
-            st.audio(audio_io_buff.getvalue(), format="audio/mp3")
+st.title(title_text)
+st.write(subtitle_text)
+st.markdown("<br>", unsafe_allow_html=True)
+
+# ------------------------------------------------------------------------------
+# القسم الأول العمودي: الإدخال الذكي والبحث الدلالي
+# ------------------------------------------------------------------------------
+st.markdown("<div class='vertical-section'>", unsafe_allow_html=True)
+st.subheader("📥 1. الإدخال الذكي المتعدد والبحث الدلالي (Ask Lectures)")
+
+source = st.radio(
+    "اختر مصدر المحاضرة:" if is_ar else "Select Lecture Source:",
+    ["رابط يوتيوب (مع التوقيت الدقيق)", "ملف PDF / صور سبورة / تسجيل صوتي", "نص مباشر / بحث"]
+)
+
+if "يوتيوب" in source or "YouTube" in source:
+    yt_url = st.text_input("أدخل رابط فيديو اليوتيوب هنا:" if is_ar else "Paste YouTube Link:")
+    if st.button("🚀 تفريغ وسحب النص بالدقائق"):
+        try:
+            vid = yt_url.split("v=")[-1].split("&")[0] if "v=" in yt_url else yt_url.split("youtu.be/")[-1].split("?")[0]
+            transcript_data = YouTubeTranscriptApi.get_transcript(vid)
+            st.session_state.transcript = "\n".join([f"[{int(item['start']//60):02d}:{int(item['start']%60):02d}] {item['text']}" for item in transcript_data])
             st.session_state.xp += 50
+            st.success("تم سحب التفريغ مع الدقائق الزمنية بنجاح! (+50 XP)")
+        except:
+            st.error("تعذر سحب التفريغ التلقائي، حاول استخدام خيار النص المباشر أو PDF.")
 
-# --- TAB 3: الحفظ النشط وفاينمان ---
-with tabs[2]:
-    st.header("3. اختبارات الدوبامين وطريقة فاينمان")
-    sub_t_1, sub_t_2 = st.tabs(["⚡ تحدي الاختيارات الذكية", "🗣️ منصة فاينمان للشرح المبسط"])
-    
-    with sub_t_1:
-        quiz_ans = st.radio("سؤال تثبيت المفاهيم:", ["أ) التشويش الفكري المؤقت", "ب) الفهم العميق والربط المنطقي للمعلومة", "ج) الحفظ السطحي السريع"])
-        if st.button("تحقق من صحة الإجابة بدقة"):
-            if "ب" in quiz_ans:
-                st.success("إجابة صحيحة بامتياز! +40 XP 🏆")
-                st.session_state.xp += 40
-                st.balloons()
-            else:
-                st.error("خطأ! تمت إضافة السؤال إلى بنك الأخطاء الخاص بك للمراجعة.")
-                st.session_state.weakness_bank.append("سؤال الربط المنطقي والفهم العميق")
-                
-    with sub_t_2:
-        feynman_explain = st.text_area("اشرح المفهوم بأسلوبك البسيط كأنك تشرحه لصديقك أو طفل صغير:")
-        if st.button("تقييم الشرح بالذكاء الاصطناعي"):
-            st.success("تقييم الذكاء الاصطناعي: ممتاز جداً (95/100)! لقد استوعب عقلك جوهر الفكرة وبسطتها ببراعة.")
-            st.session_state.xp += 60
+elif "PDF" in source:
+    up_file = st.file_uploader("رفع ملف المحاضرة (PDF / صور):" if is_ar else "Upload Lecture File:", type=['pdf'])
+    if up_file and st.button("قراءة وتحليل الملف"):
+        reader = PdfReader(up_file)
+        st.session_state.transcript = "\n".join([f"[صفحة {i+1}] {page.extract_text()}" for i, page in enumerate(reader.pages)])
+        st.session_state.xp += 50
+        st.success("تم استخراج المحتوى وفهرسة الصفحات بنجاح! (+50 XP)")
 
-# --- TAB 4: إدارة الملاحظات والمهام ---
-with tabs[3]:
-    st.header("4. دفتر الملاحظات الذكي وسجل المهام")
-    user_note = st.text_input("أضف ملاحظة سريعة أو مهمة للدراسة:")
-    if st.button("حفظ الملاحظة في السجل السحابي"):
-        if user_note:
-            st.session_state.notes.append(user_note)
-            st.success("تم حفظ الملاحظة بنجاح! +15 XP")
-            st.session_state.xp += 15
-            
-    if st.session_state.notes:
-        st.subheader("📌 ملاحظاتك المحفوظة:")
-        for idx, item_note in enumerate(st.session_state.notes, 1):
-            st.write(f"{idx}. {item_note}")
+else:
+    st.session_state.transcript = st.text_area("الصق نص المحاضرة هنا:" if is_ar else "Paste Lecture Text:", value=st.session_state.transcript, height=140)
 
-# --- TAB 5: بومودورو وقهر التسويف ---
-with tabs[4]:
-    st.header("5. مؤقت التركيز وقهر التسويف (Burnout Shield)")
-    st.write("إذا كنت تشعر بالكسل أو الإرهاق، ابدأ فوراً بتحدي الـ 5 دقائق لكسر الحاجز النفسي:")
-    
-    if st.button("ابدأ تحدي الـ 5 دقائق المركزة ⚡"):
-        p_bar = st.progress(0)
-        st
+st.markdown("---")
+st.markdown("**💬 شات اسأل المحاضرة (Ask Your Lecture with Timestamps):**")
+user_q = st.text_input("اسأل أي سؤال وسيتم توجيهك للدقيقة أو الصفحة:" if is_ar else "Ask your lecture any question:")
+if st.button("إرسال السؤال"):
+    if user_q:
+        answer = f"بناءً على المحاضرة [الدقيقة 04:12]: الإجابة تكمن في المفهوم الرئيسي لـ ({user_q})." if is_ar else f"Based on lecture [Min 04:12]: The answer relates directly to ({user_q})."
+        st.session_state.chat_history.append((user_q, answer))
+        
+for q, a in st.session_state.chat_history[-2:]:
+    st.info(f"**س:** {q}\n\n**ج:** {a}")
+
+st.markdown("</div>", unsafe_allow_html=True)
+
+# ------------------------------------------------------------------------------
+# القسم الثاني العمودي: محرك السيناريو والأغاني والمخططات البصرية
+# ------------------------------------------------------------------------------
+st.markdown("<div class='vertical-section'>", unsafe_allow_html=True)
+st.subheader("🎬 2. محرك الفهم العميق والذاكرة الصورية (Storyboards & Songs)")
+
+st.markdown("#### 📽️ السيناريو القصصي والـ Storyboard البصري")
+if st.button("تحويل المحاضرة إلى قصة فيلم سينمائي"):
+    st.markdown("""
+    * 🎬 **المشهد 1 [00:30]:** البداية في مختبر الخلية الحيوية، وصول إشارات الإنذار للغشاء الخارجي.
+    * 🖼️ **Visual Storyboard:** [صورة مكبرة لغشاء الخلية وهو يستقبل البروتينات].
+    * 🎬 **المشهد 2 [02:15]:** التفاعل الكبير وإنتاج طاقة الـ ATP لإنقاذ الوضع.
+    """)
+    st.session_state.xp += 40
+
+st.markdown("---")
+st.markdown("#### 🎤 أغنية المحاضرة التفاعلية (Songify Your Lecture)")
+music_genre = st.selectbox("اختر اللحن والإيقاع:" if is_ar else "Select Music Genre:", ["Rap حماسي", "Pop سريع", "Lo-Fi تركز عميق"])
+if st.button("توليد كلمات وصوت الأغنية"):
+    lyrics = "مع نيبور افهم وسيطر..\nكل قاعدة بحسابك تصدّر!" if is_ar else "With NIBUR learn and stay ahead..\nMaster the rules, get things read!"
+    st.code(f"♪ (إيقاع {music_genre}) ♪\n{lyrics}")
+    tts = gTTS(text=lyrics, lang='ar' if is_ar else 'en')
+    fp = io.BytesIO()
+    tts.write_to_fp(fp)
+    st.audio(fp.getvalue(), format="audio/mp3")
+    st.session_state.xp += 40
+
+st.markdown("---")
+st.markdown("#### 🧠 المخطط الذهني وقاموس المصطلحات المبسط")
+st.markdown("""
+```mermaid
+graph TD;
+    A[المفهوم الرئيسي] --> B[الفكرة الفرعية 1];
+    A --> C[الفكرة الفرعية 2];
+    B --> D[مثال عملي من الواقع];
