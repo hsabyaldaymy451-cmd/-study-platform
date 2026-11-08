@@ -7,7 +7,7 @@ from youtube_transcript_api import YouTubeTranscriptApi
 from PyPDF2 import PdfReader
 
 # ==============================================================================
-# NIBUR ENGINE ULTIMATE - منصة نيبور الخارقة الشاملة (50+ ميزة حقيقية)
+# NIBUR ENGINE ULTIMATE - منصة نيبور الخارقة الشاملة (مع حماية الرمز السري)
 # ==============================================================================
 st.set_page_config(
     page_title="NIBUR Engine Ultimate | منصة نيبور الخارقة",
@@ -51,6 +51,34 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==============================================================================
+# نظام حماية الرمز السري (PIN Code Security Lock)
+# ==============================================================================
+MY_SECRET_PIN = "2026"  # يمكنك تغيير هذا الرمز السري إلى أي رقم تريده
+
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    st.markdown("<br><br><br>", unsafe_allow_html=True)
+    col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
+    with col_l2:
+        st.markdown("<div class='feature-card' style='text-align: center;'>", unsafe_allow_html=True)
+        st.markdown("<h2>🦅 منصة نيبور مقفلة</h2>", unsafe_allow_html=True)
+        st.caption("أدخل الرمز السري الخاص بك لفتح المنصة والوصول إلى بياناتك:")
+        
+        entered_pin = st.text_input("الرمز السري (PIN Code):", type="password")
+        if st.button("🔓 فتح قفل المنصة"):
+            if entered_pin == MY_SECRET_PIN:
+                st.session_state.authenticated = True
+                st.success("تم تأكيد الهوية بنجاح! جاري فتح المنصة...")
+                time.sleep(1)
+                st.rerun()
+            else:
+                st.error("الرمز السري خطأ! حاول مجدداً.")
+        st.markdown("</div>", unsafe_allow_html=True)
+    st.stop()
+
+# ==============================================================================
 # إدارة الذاكرة والتاريخ للستريك الحقيقي والنقاط والمستويات (Session State)
 # ==============================================================================
 today = date.today()
@@ -73,7 +101,7 @@ if st.session_state.last_login != today:
     st.session_state.last_login = today
 
 # ==============================================================================
-# الشريط الجانبي (Sidebar) - الهوية، الستريك، واختيار اللغة والطاقة
+# الشريط الجانبي (Sidebar)
 # ==============================================================================
 with st.sidebar:
     st.markdown("<h2 style='text-align: center; color: #3b82f6;'>🦅 NIBUR ULTIMATE</h2>", unsafe_allow_html=True)
@@ -102,15 +130,20 @@ with st.sidebar:
     if panic_mode:
         st.error("تم فلترة المحتوى واستخراج أهم 20% لضمان النجاح السريع!")
 
+    st.markdown("---")
+    if st.button("🔒 قفل المنصة (Lock App)"):
+        st.session_state.authenticated = False
+        st.rerun()
+
 # ==============================================================================
-# الهيكل الرئيسي العمودي للمنصة (تجميع كل الأوامر والـ 50+ ميزة)
+# الهيكل الرئيسي العمودي للمنصة
 # ==============================================================================
 st.title("🦅 منصة نيبور الذكية الشاملة (NIBUR Engine Ultimate)")
 st.write("المنصة الأضخم على الإطلاق: إدارة عقل، تفريغ يوتيوب، بودكاست، سيناريوهات، تكرار متباعد، رادار فخاخ، ومحاكي شفهي.")
 st.markdown("<br>", unsafe_allow_html=True)
 
 # ------------------------------------------------------------------------------
-# 1. قسم الإدخال الذكي والبحث الدلالي والكشف عن الحلقات المفقودة
+# 1. قسم الإدخال الذكي والبحث الدلالي
 # ------------------------------------------------------------------------------
 st.markdown("<div class='feature-card'>", unsafe_allow_html=True)
 st.subheader("📥 1. الإدخال المتعدد، البحث الدلالي، وكاشف الحلقات المفقودة")
@@ -154,7 +187,7 @@ for q, a in st.session_state.chat_history[-2:]:
 st.markdown("</div>", unsafe_allow_html=True)
 
 # ------------------------------------------------------------------------------
-# 2. قسم الفهم العميق، السيناريو، الـ Storyboards، والبودكاست والأغاني
+# 2. قسم الفهم العميق والسيناريو والبودكاست
 # ------------------------------------------------------------------------------
 st.markdown("<div class='feature-card'>", unsafe_allow_html=True)
 st.subheader("🎬 2. السيناريو السينمائي، Storyboards، البودكاست الصوتي، والأغاني")
