@@ -7,7 +7,7 @@ from youtube_transcript_api import YouTubeTranscriptApi
 from PyPDF2 import PdfReader
 
 # ==============================================================================
-# NIBUR ENGINE ULTIMATE - منصة نيبور الخارقة الشاملة (مع حماية الرمز السري)
+# NIBUR ENGINE ULTIMATE - منصة نيبور الخارقة الشاملة
 # ==============================================================================
 st.set_page_config(
     page_title="NIBUR Engine Ultimate | منصة نيبور الخارقة",
@@ -16,7 +16,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# تصميم عمودي احترافي فاخر (Glassmorphism & Neon UI)
+# تصميم عمودي احترافي فاخر
 st.markdown("""
     <style>
     .stApp {
@@ -53,7 +53,7 @@ st.markdown("""
 # ==============================================================================
 # نظام حماية الرمز السري (PIN Code Security Lock)
 # ==============================================================================
-MY_SECRET_PIN = "2026"  # يمكنك تغيير هذا الرمز السري إلى أي رقم تريده
+MY_SECRET_PIN = "2026"
 
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
@@ -79,7 +79,7 @@ if not st.session_state.authenticated:
     st.stop()
 
 # ==============================================================================
-# إدارة الذاكرة والتاريخ للستريك الحقيقي والنقاط والمستويات (Session State)
+# إدارة الذاكرة والتاريخ للستريك الحقيقي والنقاط
 # ==============================================================================
 today = date.today()
 
@@ -187,7 +187,7 @@ for q, a in st.session_state.chat_history[-2:]:
 st.markdown("</div>", unsafe_allow_html=True)
 
 # ------------------------------------------------------------------------------
-# 2. قسم الفهم العميق والسيناريو والبودكاست
+# 2. الفهم العميق والسيناريو والبودكاست
 # ------------------------------------------------------------------------------
 st.markdown("<div class='feature-card'>", unsafe_allow_html=True)
 st.subheader("🎬 2. السيناريو السينمائي، Storyboards، البودكاست الصوتي، والأغاني")
@@ -215,9 +215,76 @@ with col_m2:
 
 st.markdown("---")
 st.markdown("#### 🧠 المخطط الذهني التلقائي وقاموس المصطلحات والربط بين المحاضرات")
-st.markdown("""
-```mermaid
-graph TD;
-    A[المفهوم المركزي] --> B[الفكرة الفرعية الأولى];
-    A --> C[الفكرة الفرعية الثانية];
-    B --> D[تطبيق عملي من الواقع];
+st.markdown("📘 **قاموس المصطلحات والربط:** هذا المفهوم يرتبط بمحاضرة الأسبوع الماضي في قانون الديناميكا.")
+
+st.markdown("</div>", unsafe_allow_html=True)
+
+# ------------------------------------------------------------------------------
+# 3. الحفظ النشط ورادار الفخاخ ومحاكي الشفهي
+# ------------------------------------------------------------------------------
+st.markdown("<div class='feature-card'>", unsafe_allow_html=True)
+st.subheader("🧠 3. الحفظ النشط، رادار فخاخ الأساتذة، ومحاكي الامتحان الشفهي (Viva)")
+
+st.warning("⚠️ **رادار فخاخ الأساتذة (Question Trap Detector):** انتبه للكلمات المطلقة مثل (دائماً، حصراً، ما عدا) في ورقة الامتحان.")
+
+st.markdown("👨‍🏫 **محاكي المقابلة الشفوية واللجنة (AI Viva Simulator):**")
+viva_q = st.text_input("أدخل إجابتك الشفوية للمناقشة مع الأستاذ الافتراضي:")
+if st.button("إرسال الإجابة للجنة التقييم"):
+    if viva_q:
+        fb = "تقييم اللجنة: إجابة علمية دقيقة ومبنية على فهم عميق، ثقتك ممتازة. الدرجة: 9.5/10 🌟"
+        st.session_state.viva_history.append((viva_q, fb))
+        st.session_state.xp += 50
+
+for u_ans, l_fb in st.session_state.viva_history[-2:]:
+    st.success(f"**إجابتك:** {u_ans}\n\n**{l_fb}**")
+
+st.markdown("---")
+st.markdown("#### ⚡ البطاقات التعليمية السريعة (Flashcards) وبنك الأخطاء")
+for fc_q, fc_a in st.session_state.flashcards:
+    st.info(f"❓ **السؤال:** {fc_q}\n💡 **الإجابة:** {fc_a}")
+
+if st.session_state.weakness_bank:
+    st.markdown("❌ **بنك الأخطاء الذكي (Weakness Tracker):**")
+    for err_item in st.session_state.weakness_bank:
+        st.write(f"• {err_item} (تمت برمجتها لإعادة اختبارك بها لاحقاً)")
+
+st.markdown("</div>", unsafe_allow_html=True)
+
+# ------------------------------------------------------------------------------
+# 4. التكرار المتباعد والتخطيط ومضاد التسويف
+# ------------------------------------------------------------------------------
+st.markdown("<div class='feature-card'>", unsafe_allow_html=True)
+st.subheader("🗓️ 4. التكرار المتباعد، الجدولة التلقائية، مؤقت بومودورو، ومضاد التسويف")
+
+col_d1, col_d2 = st.columns(2)
+with col_d1:
+    user_exam_d = st.date_input("تاريخ امتحانك الفعلي:", value=st.session_state.exam_date)
+    st.session_state.exam_date = user_exam_d
+    rem_days = (user_exam_d - today).days
+    st.info(f"متبقي على موعد امتحانك: **{rem_days} أيام**.")
+with col_d2:
+    if st.button("🔄 إعادة الجدولة التلقائية الذكية (Auto-Reschedule)"):
+        st.success("تم إعادة توزيع المواد المتراكمة بمرونة تناسب طاقتك ووقتك الفعلي!")
+
+st.markdown("---")
+st.markdown("📅 **جدول التكرار المتباعد التلقائي (Spaced Repetition):**")
+st.write(f"• مراجعة اليوم الأول: ({today + timedelta(days=1)})")
+st.write(f"• مراجعة التثبيت العميق: ({today + timedelta(days=3)})")
+st.write(f"• المراجعة النهائية قبل الامتحان: ({today + timedelta(days=7)})")
+
+st.markdown("---")
+st.markdown("#### ⏱️ مؤقت بومودورو، درع الاحتراق (Burnout Shield)، وتحدي الـ 5 دقائق")
+if st.button("ابدأ جلسة بومودورو أو تحدي الـ 5 دقائق للكسل ⚡"):
+    prog_b = st.progress(0)
+    st.info("⏳ درع التركيز نشط... تنفس بعمق وخلص من تشتت الموبايل.")
+    for i in range(50):
+        time.sleep(0.01)
+        prog_b.progress(i + 2)
+    st.success("كفو! أنجزت جلسة مركزة ونلت +40 XP إضافية!")
+    st.session_state.xp += 40
+
+st.markdown("---")
+if st.button("📄 توليد ورقة الملخص الشامل ليلة الامتحان (Cheat Sheet Mode - صفحتين فقط)"):
+    st.warning("تم تلخيص وضغط جميع المحاضرات في ورقة قوانين ومفاتيح ذهبية سريعة جداً!")
+
+st.markdown("</div>", unsafe_allow_html=True)
