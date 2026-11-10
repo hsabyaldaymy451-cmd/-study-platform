@@ -144,11 +144,7 @@ if "generated_summary" not in st.session_state: st.session_state.generated_summa
 if "evaluation_result" not in st.session_state: st.session_state.evaluation_result = ""
 
 # التحقق من القفل السري للمنصة
-try:
-    MY_PIN = str(st.secrets["PIN"])
-except Exception:
-    MY_PIN = "2026"
-
+MY_PIN = "2026"
 if not st.session_state.auth:
     st.markdown("<br><br>", unsafe_allow_html=True)
     _, mid, _ = st.columns([1, 2, 1])
