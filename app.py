@@ -142,7 +142,7 @@ if "lecture_summary" not in st.session_state: st.session_state.lecture_summary =
 if "generated_story" not in st.session_state: st.session_state.generated_story = ""
 if "generated_summary" not in st.session_state: st.session_state.generated_summary = ""
 if "evaluation_result" not in st.session_state: st.session_state.evaluation_result = ""
-
+    
 # التحقق من القفل السري للمنصة
 MY_PIN = "2026"
 if not st.session_state.auth:
