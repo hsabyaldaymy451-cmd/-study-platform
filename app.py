@@ -11,7 +11,7 @@ import g4f
 import nest_asyncio
 nest_asyncio.apply()
 
-# إعدادات الصفحة الأساسية للمنصة
+# إعدادات الصفحة الأساسية
 st.set_page_config(
     page_title="NIBUR Engine Ultimate",
     page_icon="🦅",
@@ -130,8 +130,8 @@ def ask_ai(prompt_text):
         )
         return response
     except Exception:
-        return "عذراً، المحرك الذكي مشغول حالياً. تم حفظ مادة الدرس برمجياً بنجاح وسنقوم بمعالجتها لاحقاً."
-# تهيئة متغيرات الجلسة (Session States)
+        return "عذراً، المحرك الذكي مشغول حالياً. تم حفظ مادة الدرس بنجاح وسنعيد معالجتها لاحقاً."
+# إدارة حالات الجلسة
 today = date.today()
 if "auth" not in st.session_state: st.session_state.auth = False
 if "login_date" not in st.session_state: st.session_state.login_date = today
@@ -142,12 +142,13 @@ if "lecture_summary" not in st.session_state: st.session_state.lecture_summary =
 if "generated_story" not in st.session_state: st.session_state.generated_story = ""
 if "generated_summary" not in st.session_state: st.session_state.generated_summary = ""
 if "evaluation_result" not in st.session_state: st.session_state.evaluation_result = ""
-    
-# التحقق من القفل السري للمنصة
+
+# قفل المنصة المباشر
 MY_PIN = "2026"
+
 if not st.session_state.auth:
     st.markdown("<br><br>", unsafe_allow_html=True)
-    _, mid, _ = st.columns([1, 2, 1])
+    _, mid, _ = st.columns()
     with mid:
         st.markdown(
             "<div class='card' style='text-align:center'>"
@@ -166,7 +167,7 @@ if not st.session_state.auth:
                 st.error("الرمز السري خاطئ! حاول مجدداً.")
     st.stop()
 
-# تحديث الستريك اليومي تلقائياً
+# حساب الستريك
 if st.session_state.login_date != today:
     d_diff = (today - st.session_state.login_date).days
     if d_diff == 1: st.session_state.streak += 1
@@ -181,7 +182,7 @@ in_level = xp % LEVEL_STEP
 exam_date = st.session_state.get("exam_date", today + timedelta(days=10))
 rem = (exam_date - today).days
 
-# بناء الشريط الجانبي (Sidebar)
+# بناء الشريط الجانبي
 with st.sidebar:
     st.markdown("<div class='brand'>🦅 NIBUR ULTIMATE</div>", unsafe_allow_html=True)
     st.markdown(
@@ -331,7 +332,7 @@ with tab4:
             ("🧠 مراجعة العمق والربط الذهني", today + timedelta(days=3), False),
             ("🎯 المراجعة النهائية الشاملة والمركزة", max(ex_d - timedelta(days=1), today), True),
         ]
-        steps = sorted([s for s in steps if s[1] <= ex_d], key=lambda s: s[1])
+        steps = sorted([s for s in steps if s <= ex_d], key=lambda s: s)
         items = "".join(
             f"<div class='tl-item{' final' if fin else ''}'>"
             f"<div class='tl-title'>{name}</div>"
