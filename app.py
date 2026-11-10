@@ -90,6 +90,7 @@ p, li, label{ line-height:1.8; }
 }
 </style>
 """, unsafe_allow_html=True)
+
 def ar_days(n):
     if n <= 0: return "اليوم"
     if n == 1: return "يوم واحد"
@@ -129,8 +130,9 @@ def ask_ai(prompt_text):
             messages=[{"role": "user", "content": prompt_text}],
         )
         return response
-    except Exception:
-        return "عذراً، المحرك الذكي مشغول حالياً. تم حفظ مادة الدرس بنجاح وسنعيد معالجتها لاحقاً."
+    except Exception as e:
+        return f"عذراً، المحرك الذكي مشغول حالياً أو حدث خطأ في الاتصال. (التفاصيل: {str(e)})"
+
 # إدارة حالات الجلسة
 today = date.today()
 if "auth" not in st.session_state: st.session_state.auth = False
@@ -148,7 +150,8 @@ MY_PIN = "2026"
 
 if not st.session_state.auth:
     st.markdown("<br><br>", unsafe_allow_html=True)
-    _, mid, _ = st.columns()
+    # [تصحيح هام هنا]: تم إضافة الرقم 3 لتحديد عدد الأعمدة صراحة لتجنب انهيار التطبيق
+    _, mid, _ = st.columns(3)
     with mid:
         st.markdown(
             "<div class='card' style='text-align:center'>"
@@ -199,6 +202,7 @@ with st.sidebar:
     if st.button("قفل المنصة"):
         st.session_state.auth = False
         st.rerun()
+
 st.title("منصة نيبور الذكية الشاملة")
 st.markdown("<p class='muted' style='margin-top:-8px'>ادرس محاضراتك، حلّلها باستخدام الذكاء الاصطناعي الحقيقي، وراجعها في وقتها.</p>", unsafe_allow_html=True)
 
@@ -332,7 +336,7 @@ with tab4:
             ("🧠 مراجعة العمق والربط الذهني", today + timedelta(days=3), False),
             ("🎯 المراجعة النهائية الشاملة والمركزة", max(ex_d - timedelta(days=1), today), True),
         ]
-        steps = sorted([s for s in steps if s <= ex_d], key=lambda s: s)
+        steps = sorted([s for s in steps if s[1] <= ex_d], key=lambda s: s[1])
         items = "".join(
             f"<div class='tl-item{' final' if fin else ''}'>"
             f"<div class='tl-title'>{name}</div>"
