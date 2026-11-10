@@ -2,6 +2,7 @@ import streamlit as st
 import time
 import re
 import asyncio
+import concurrent.futures
 from datetime import date, timedelta
 from PyPDF2 import PdfReader
 from youtube_transcript_api import YouTubeTranscriptApi
@@ -28,7 +29,7 @@ st.markdown("""
 .stApp button, .stApp input, .stApp textarea, .stApp li {
   font-family:'Tajawal', sans-serif !important;
 }
-.stApp{ background:var(--bg); color:var(--text); direction:rtl; }
+.stApp{ background:var(--bg); color:var(--text); direction:ltr; }
 [data-testid="stHeader"]{ background:transparent; }
 footer{ visibility:hidden; }
 .block-container{ max-width:960px; padding-top:2.2rem; padding-bottom:4rem; }
@@ -62,36 +63,23 @@ p, li, label{ line-height:1.8; }
 [data-testid="stSidebar"] .stButton > button{ background:transparent; color:var(--text); border:1px solid var(--line); }
 [data-testid="stSidebar"] .stButton > button:hover{ background:var(--surface2); }
 .stTextInput input, .stTextArea textarea, .stDateInput input{ background:var(--surface2) !important; border:1px solid var(--line) !important; border-radius:10px !important; color:var(--text) !important; }
-
-.tl{ position:relative; padding-right:28px; margin-top:6px; }
-.tl::before{ content:""; position:absolute; right:7px; top:8px; bottom:14px; width:2px; background:var(--line); }
-.tl-item{ position:relative; padding-bottom:20px; }
-.tl-item::before{ content:""; position:absolute; right:-28px; top:6px; width:12px; height:12px; border-radius:50%; background:var(--bg); border:2px solid var(--accent); }
-.tl-item.final::before{ border-color:var(--warn); background:var(--warn); }
-.tl-title{ font-weight:700; }
-.tl-date{ color:var(--muted); font-size:.9rem; }
 </style>
 """, unsafe_allow_html=True)
 
-def ar_days(n):
-    if n <= 0: return "اليوم"
-    if n == 1: return "يوم واحد"
-    if n == 2: return "يومان"
-    if n <= 10: return f"{n} أيام"
-    return f"{n} يوماً"
+def ask_ai(prompt_text):
+    def _call_g4f():
+        try:
+            response = g4f.ChatCompletion.create(
+                model=g4f.models.gpt_4o,
+                messages=[{"role": "user", "content": prompt_text}],
+            )
+            return response
+        except Exception as e:
+            return f"Error connecting to AI engine: {str(e)}"
 
-def rel_label(d, today):
-    diff = (d - today).days
-    if diff <= 0: return "اليوم"
-    if diff == 1: return "غداً"
-    if diff == 2: return "بعد يومين"
-    return f"بعد {ar_days(diff)}"
-
-def card(html, cls=""):
-    st.markdown(f"<div class='card {cls}'>{html}</div>", unsafe_allow_html=True)
-
-def stat(label, value):
-    return f"<div class='card sm'><div class='stat-label'>{label}</div><div class='stat-value'>{value}</div></div>"
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future = executor.submit(_call_g4f)
+        return future.result()
 
 def extract_youtube_id(url):
     pattern = r'(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?vi?r\=|\S*?v\=)|youtu\.be\/)([a-zA-Z0-9_-]{11})'
@@ -105,19 +93,8 @@ def extract_yt_transcript(video_id):
     except Exception:
         return None
 
-def ask_ai(prompt_text):
-    try:
-        response = g4f.ChatCompletion.create(
-            model=g4f.models.gpt_4o,
-            messages=[{"role": "user", "content": prompt_text}],
-        )
-        return response
-    except Exception as e:
-        return f"عذراً، المحرك الذكي مشغول حالياً أو حدث خطأ في الاتصال. (التفاصيل: {str(e)})"
-
 today = date.today()
 if "auth" not in st.session_state: st.session_state.auth = False
-if "login_date" not in st.session_state: st.session_state.login_date = today
 if "streak" not in st.session_state: st.session_state.streak = 1
 if "xp" not in st.session_state: st.session_state.xp = 100
 if "lecture_content" not in st.session_state: st.session_state.lecture_content = ""
@@ -134,91 +111,125 @@ if not st.session_state.auth:
     with mid:
         st.markdown(
             "<div class='card' style='text-align:center'>"
-            "<div class='brand' style='margin-bottom:6px'>🦅 منصة نيبور الذكية</div>"
-            "<div class='muted'>المنصة مقفلة حالياً. أدخل الرمز السري للمتابعة.</div></div>",
+            "<div class='brand' style='margin-bottom:6px'>🦅 NIBUR Study Platform</div>"
+            "<div class='muted'>Platform is locked. Enter PIN to continue.</div></div>",
             unsafe_allow_html=True,
         )
-        p_in = st.text_input("الرمز السري الخاص بك", type="password")
-        if st.button("فتح المنصة الآن"):
+        p_in = st.text_input("Enter Secret PIN", type="password")
+        if st.button("Unlock Platform"):
             if p_in == MY_PIN:
                 st.session_state.auth = True
-                st.success("تم فتح منصتك بنجاح، جاري التحميل...")
+                st.success("Unlocked successfully!")
                 time.sleep(0.5)
                 st.rerun()
             else:
-                st.error("الرمز السري خاطئ! حاول مجدداً.")
+                st.error("Incorrect PIN! Try again.")
     st.stop()
-
-if st.session_state.login_date != today:
-    d_diff = (today - st.session_state.login_date).days
-    if d_diff == 1: st.session_state.streak += 1
-    elif d_diff > 1: st.session_state.streak = 1
-    st.session_state.login_date = today
 
 LEVEL_STEP = 200
 xp = st.session_state.xp
 level = xp // LEVEL_STEP + 1
 in_level = xp % LEVEL_STEP
 
-exam_date = st.session_state.get("exam_date", today + timedelta(days=10))
-rem = (exam_date - today).days
-
 with st.sidebar:
     st.markdown("<div class='brand'>🦅 NIBUR ULTIMATE</div>", unsafe_allow_html=True)
-    st.markdown(
-        f"<div class='card sm'><div class='row'><b>المستوى {level}</b>"
-        f"<span class='muted'>{in_level} / {LEVEL_STEP} XP</span></div>"
-        f"<div class='bar'><i style='width:{in_level / LEVEL_STEP * 100:.0f}%'></i></div></div>",
-        unsafe_allow_html=True,
-    )
-    st.markdown(stat("نقاط الخبرة الكلية", f"{xp} XP"), unsafe_allow_html=True)
-    st.markdown(stat("أيام الالتزام المتتالية", ar_days(st.session_state.streak)), unsafe_allow_html=True)
-    exam_txt = "انتهى الموعد" if rem < 0 else ar_days(rem)
-    st.markdown(stat("المتبقي للامتحان", exam_txt), unsafe_allow_html=True)
-    st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("قفل المنصة"):
+    st.markdown(f"<div class='card sm'><b>Level {level}</b><br>{in_level} / {LEVEL_STEP} XP</div>", unsafe_allow_html=True)
+    if st.button("Lock Platform"):
         st.session_state.auth = False
         st.rerun()
 
-st.title("منصة نيبور الذكية الشاملة")
-st.markdown("<p class='muted' style='margin-top:-8px'>ادرس محاضراتك، حلّلها باستخدام الذكاء الاصطناعي، وراجعها في وقتها.</p>", unsafe_allow_html=True)
+st.title("NIBUR Smart Study Platform")
+st.markdown("<p class='muted'>Study your lectures, analyze them using AI, and translate them instantly.</p>", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "الإدخال والمحاضرة",
-    "القصة والسيناريو",
-    "الحفظ والشفهي",
-    "الجدولة والتكرار",
-    "الطوارئ والملخصات"
-])
+# خيار الترجمة العربية العامة
+translate_to_arabic = st.checkbox("🌐 Translate AI responses to Arabic (ترجمة الردود إلى العربية تلقائياً)")
+
+tab1, tab2, tab3 = st.tabs(["Lecture & AI Summary", "Story & Mindmap", "Emergency Review"])
 
 with tab1:
-    st.subheader("إدخال محتوى المحاضرة")
-    m_type = st.radio("طريقة استقطاب المحتوى الدراسي", ["لصق نص / تفريغ يوتيوب", "رفع ملف PDF"], horizontal=True)
+    st.subheader("Lecture Input & Analysis")
+    input_type = st.radio("Choose source type", ["Paste Text / YouTube URL", "Upload PDF"], horizontal=True)
     
-    if "PDF" in m_type:
-        pdf_file = st.file_uploader("ارفع ملف الـ PDF الخاص بالمحاضرة", type=["pdf"])
-        if pdf_file and st.button("قراءة وتلخيص الملف بالـ AI"):
-            with st.spinner("جاري قراءة ملف الـ PDF واستخلاص الأفكار..."):
+    if "PDF" in input_type:
+        pdf_file = st.file_uploader("Upload Lecture PDF", type=["pdf"])
+        if pdf_file and st.button("Read & Summarize PDF"):
+            with st.spinner("Processing PDF file..."):
                 reader = PdfReader(pdf_file)
                 extracted_text = "\n".join((p.extract_text() or "") for p in reader.pages)
                 st.session_state.lecture_content = extracted_text
                 
-                ai_summary = ask_ai(f"لخص لي المحاضرة التالية بأسلوب نقاط ذكي وشامل ومفهوم باللغة العربية:\n\n{extracted_text[:3000]}")
+                lang_instruction = " Translate the final summary into clear Arabic language." if translate_to_arabic else ""
+                ai_summary = ask_ai(f"Summarize the following lecture into key structured points:{lang_instruction}\n\n{extracted_text[:3000]}")
                 st.session_state.lecture_summary = ai_summary
                 st.session_state.xp += 30
-                st.success("تمت قراءة وفهرسة وتلخيص الملف بنجاح! (+30 XP)")
-                time.sleep(0.5)
+                st.success("PDF processed successfully! (+30 XP)")
                 st.rerun()
     else:
-        url_or_text = st.text_area("أدخل الشرح النصي للمحاضرة أو الصق رابط فيديو يوتيوب:", value=st.session_state.lecture_content, height=150)
-        if st.button("حفظ ومعالجة المحتوى بالذكاء الاصطناعي"):
-            if "youtube.com" in url_or_text or "youtu.be" in url_or_text:
-                vid_id = extract_youtube_id(url_or_text)
+        text_input = st.text_area("Paste lecture text or YouTube link:", value=st.session_state.lecture_content, height=150)
+        if st.button("Process Content with AI"):
+            if "youtube.com" in text_input or "youtu.be" in text_input:
+                vid_id = extract_youtube_id(text_input)
                 if vid_id:
-                    with st.spinner("جاري سحب تفريغ المحاضرة من فيديو اليوتيوب وتحليله..."):
+                    with st.spinner("Extracting YouTube transcript..."):
                         transcript = extract_yt_transcript(vid_id)
                         if transcript:
                             st.session_state.lecture_content = transcript
-                            ai_summary = ask_ai(f"قم بتلخيص نص هذه المحاضرة المستخرجة من اليوتيوب تلخيصاً أكاديمياً ومقسماً لعناوين واضحَة:\n\n{transcript[:3000]}")
+                            lang_instruction = " Translate the summary into clear Arabic language." if translate_to_arabic else ""
+                            ai_summary = ask_ai(f"Summarize this YouTube transcript academically:{lang_instruction}\n\n{transcript[:3000]}")
                             st.session_state.lecture_summary = ai_summary
                             st.session_state.xp += 40
+                            st.success("YouTube video transcribed and summarized! (+40 XP)")
+                            st.rerun()
+                        else:
+                            st.error("Could not fetch transcript for this video.")
+                else:
+                    st.error("Invalid YouTube URL.")
+            else:
+                if text_input.strip():
+                    with st.spinner("Analyzing text..."):
+                        st.session_state.lecture_content = text_input
+                        lang_instruction = " Translate the summary into clear Arabic language." if translate_to_arabic else ""
+                        ai_summary = ask_ai(f"Summarize the following text clearly:{lang_instruction}\n\n{text_input}")
+                        st.session_state.lecture_summary = ai_summary
+                        st.session_state.xp += 20
+                        st.success("Summary generated successfully! (+20 XP)")
+                        st.rerun()
+                else:
+                    st.warning("Please enter text or a link first.")
+
+    if st.session_state.lecture_summary:
+        st.markdown("### 📋 AI Summary:")
+        st.info(st.session_state.lecture_summary)
+
+with tab2:
+    st.subheader("Story & Creative Visualization")
+    if st.button("Generate Interactive Story from Lecture"):
+        if st.session_state.lecture_content:
+            with st.spinner("Generating story..."):
+                lang_instruction = " Write the story in clear Arabic language." if translate_to_arabic else ""
+                ai_story = ask_ai(f"Turn this lecture into an engaging story to make it easy to remember:{lang_instruction}\n\n{st.session_state.lecture_content[:2000]}")
+                st.session_state.generated_story = ai_story
+                st.session_state.xp += 25
+                st.rerun()
+        else:
+            st.warning("Please provide lecture content in Tab 1 first.")
+
+    if st.session_state.generated_story:
+        st.markdown(f"### 🎭 Story Mode\n{st.session_state.generated_story}")
+
+with tab3:
+    st.subheader("Emergency Night-Before-Exam Summary")
+    if st.button("Generate Emergency Cheat Sheet"):
+        if st.session_state.lecture_content:
+            with st.spinner("Extracting vital definitions and laws..."):
+                lang_instruction = " Provide the final output in clear Arabic language." if translate_to_arabic else ""
+                ai_emergency = ask_ai(f"Create a concise emergency cheat sheet containing only core laws, definitions, and critical points:{lang_instruction}\n\n{st.session_state.lecture_content[:3000]}")
+                st.session_state.generated_summary = ai_emergency
+                st.session_state.xp += 30
+                st.rerun()
+        else:
+            st.warning("Please provide lecture content first.")
+        
+    if st.session_state.generated_summary:
+        st.markdown("🚀 **Emergency Cheat Sheet Ready:**")
+        st.info(st.session_state.generated_summary)
