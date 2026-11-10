@@ -1,7 +1,9 @@
 import streamlit as st
 import time
+import re
 from datetime import date, timedelta
 from PyPDF2 import PdfReader
+from youtube_transcript_api import YouTubeTranscriptApi
 
 # ==============================================================================
 # NIBUR Engine Ultimate
@@ -18,7 +20,7 @@ st.set_page_config(
 # ------------------------------------------------------------------------------
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap');
+@import url('https://googleapis.com');
 :root{
   --bg:#0e1420; --surface:#151d2e; --surface2:#1b2538; --line:#26324a;
   --text:#e8ecf4; --muted:#8b97ad; --accent:#5b8def; --ok:#3ecf9e; --warn:#f2b84b;
@@ -89,52 +91,63 @@ p, li, label{ line-height:1.8; }
 </style>
 """, unsafe_allow_html=True)
 
-
 # ------------------------------------------------------------------------------
-# دوال مساعدة
+# دوال مساعدة وثابتة
 # ------------------------------------------------------------------------------
 def ar_days(n):
-    """صياغة عربية صحيحة لعدد الأيام."""
-    if n <= 0:
-        return "اليوم"
-    if n == 1:
-        return "يوم واحد"
-    if n == 2:
-        return "يومان"
-    if n <= 10:
-        return f"{n} أيام"
+    if n <= 0: return "اليوم"
+    if n == 1: return "يوم واحد"
+    if n == 2: return "يومان"
+    if n <= 10: return f"{n} أيام"
     return f"{n} يوماً"
-
 
 def rel_label(d, today):
     diff = (d - today).days
-    if diff <= 0:
-        return "اليوم"
-    if diff == 1:
-        return "غداً"
-    if diff == 2:
-        return "بعد يومين"
+    if diff <= 0: return "اليوم"
+    if diff == 1: return "غداً"
+    if diff == 2: return "بعد يومين"
     return f"بعد {ar_days(diff)}"
-
 
 def card(html, cls=""):
     st.markdown(f"<div class='card {cls}'>{html}</div>", unsafe_allow_html=True)
 
-
 def stat(label, value):
     return f"<div class='card sm'><div class='stat-label'>{label}</div><div class='stat-value'>{value}</div></div>"
 
+def extract_youtube_id(url):
+    pattern = r'(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?vi?r\=|\S*?v\=)|youtu\.be\/)([a-zA-Z0-9_-]{11})'
+    match = re.search(pattern, url)
+    return match.group(1) if match else None
+
+def extract_yt_transcript(video_id):
+    try:
+        transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['ar', 'en'])
+        text = " ".join([item['text'] for item in transcript_list])
+        return text
+    except Exception as e:
+        return None
 
 # ------------------------------------------------------------------------------
-# قفل المنصة (الرمز يُقرأ من Streamlit Secrets، والقيمة الافتراضية مؤقتة)
+# إدارة الحالة المستمرة (Session State Initialization)
+# ------------------------------------------------------------------------------
+today = date.today()
+if "auth" not in st.session_state: st.session_state.auth = False
+if "login_date" not in st.session_state: st.session_state.login_date = today
+if "streak" not in st.session_state: st.session_state.streak = 1
+if "xp" not in st.session_state: st.session_state.xp = 100
+if "lecture" not in st.session_state: st.session_state.lecture = ""
+if "lecture_summary" not in st.session_state: st.session_state.lecture_summary = ""
+if "generated_story" not in st.session_state: st.session_state.generated_story = False
+if "generated_summary" not in st.session_state: st.session_state.generated_summary = False
+if "evaluation_result" not in st.session_state: st.session_state.evaluation_result = ""
+
+# ------------------------------------------------------------------------------
+# قفل المنصة
 # ------------------------------------------------------------------------------
 try:
     MY_PIN = str(st.secrets["PIN"])
 except Exception:
     MY_PIN = "2026"
-
-if "auth" not in st.session_state:
-    st.session_state.auth = False
 
 if not st.session_state.auth:
     st.markdown("<br><br>", unsafe_allow_html=True)
@@ -157,25 +170,11 @@ if not st.session_state.auth:
                 st.error("الرمز غير صحيح. حاول مرة ثانية.")
     st.stop()
 
-# ------------------------------------------------------------------------------
-# الستريك و XP
-# ------------------------------------------------------------------------------
-today = date.today()
-if "login_date" not in st.session_state:
-    st.session_state.login_date = today
-if "streak" not in st.session_state:
-    st.session_state.streak = 1
-if "xp" not in st.session_state:
-    st.session_state.xp = 100
-if "lecture" not in st.session_state:
-    st.session_state.lecture = ""
-
+# تحديث الستريك اليومي
 if st.session_state.login_date != today:
     d_diff = (today - st.session_state.login_date).days
-    if d_diff == 1:
-        st.session_state.streak += 1
-    elif d_diff > 1:
-        st.session_state.streak = 1
+    if d_diff == 1: st.session_state.streak += 1
+    elif d_diff > 1: st.session_state.streak = 1
     st.session_state.login_date = today
 
 LEVEL_STEP = 200
@@ -187,7 +186,7 @@ exam_date = st.session_state.get("exam_date", today + timedelta(days=10))
 rem = (exam_date - today).days
 
 # ------------------------------------------------------------------------------
-# الشريط الجانبي
+# الشريط الجانبي (Sidebar)
 # ------------------------------------------------------------------------------
 with st.sidebar:
     st.markdown("<div class='brand'>🦅 NIBUR ULTIMATE</div>", unsafe_allow_html=True)
@@ -207,13 +206,10 @@ with st.sidebar:
         st.rerun()
 
 # ------------------------------------------------------------------------------
-# الواجهة الرئيسية
+# الواجهة الرئيسية والتبويبات
 # ------------------------------------------------------------------------------
 st.title("منصة نيبور الذكية الشاملة")
-st.markdown(
-    "<p class='muted' style='margin-top:-8px'>ادرس محاضراتك، حلّلها، وراجعها في وقتها.</p>",
-    unsafe_allow_html=True,
-)
+st.markdown("<p class='muted' style='margin-top:-8px'>ادرس محاضراتك، حلّلها، وراجعها في وقتها.</p>", unsafe_allow_html=True)
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "الإدخال والمحاضرة",
@@ -223,82 +219,4 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "الطوارئ والملخصات",
 ])
 
-# --- الإدخال ---
-with tab1:
-    st.subheader("إدخال محتوى المحاضرة")
-    st.info("الصق تفريغ محاضرة اليوتيوب أو ارفع ملف PDF.")
-    m_type = st.radio("طريقة الإدخال", ["لصق نص / تفريغ يوتيوب", "رفع ملف PDF"], horizontal=True)
-    if "PDF" in m_type:
-        pdf_file = st.file_uploader("ملف PDF", type=["pdf"])
-        if pdf_file and st.button("قراءة وفهرسة الملف"):
-            reader = PdfReader(pdf_file)
-            st.session_state.lecture = "\n".join((p.extract_text() or "") for p in reader.pages)
-            st.session_state.xp += 30
-            st.success("تمت قراءة الملف (+30 XP)")
-    else:
-        st.session_state.lecture = st.text_area("النص", value=st.session_state.lecture, height=180)
-        if st.button("حفظ النص"):
-            st.session_state.xp += 20
-            st.success("تم حفظ النص (+20 XP)")
-
-# --- القصة ---
-with tab2:
-    st.subheader("تحويل المحاضرة إلى قصة ومخطط ذهني")
-    if st.button("توليد السيناريو والقصة البصرية"):
-        card(
-            "<h3>القصة السينمائية</h3>"
-            "<p><b>المشهد الأول:</b> انطلاق المفهوم الأساسي للمحاضرة.</p>"
-            "<p><b>المشهد الثاني:</b> معالجة العقدة العلمية وحل التفاعلات.</p>"
-            "<p><b>الخلاصة:</b> تثبيت القاعدة.</p>"
-        )
-        st.session_state.xp += 25
-    st.markdown("**المخطط الذهني**")
-    st.code(
-        "[المفهوم الرئيسي]\n"
-        " ├── 1. الأسباب والقواعد\n"
-        " ├── 2. العقدة والاستثناءات\n"
-        " └── 3. التطبيق العملي",
-        language="markdown",
-    )
-
-# --- الحفظ والشفهي ---
-with tab3:
-    st.subheader("الحفظ النشط والامتحان الشفهي")
-    st.warning("انتبه للكلمات المطلقة في الأسئلة مثل: حصراً، دائماً، ما عدا.")
-    ans = st.text_input("إجابتك الشفوية")
-    if st.button("إرسال للتقييم"):
-        if ans:
-            st.success("تقييم الأستاذ: إجابة ممتازة ومبنية على فهم دقيق (9.5/10)")
-            st.session_state.xp += 40
-        else:
-            st.warning("اكتب إجابتك أولاً.")
-
-# --- الجدولة ---
-with tab4:
-    st.subheader("الجدولة والتكرار المتباعد")
-    ex_d = st.date_input("تاريخ امتحانك", value=today + timedelta(days=10), key="exam_date")
-    left = (ex_d - today).days
-    if left < 0:
-        st.warning("موعد الامتحان مضى. اختر تاريخاً جديداً.")
-    else:
-        st.info(f"المتبقي للامتحان: {ar_days(left)}")
-        steps = [
-            ("مراجعة التثبيت", today + timedelta(days=1), False),
-            ("مراجعة العمق", today + timedelta(days=3), False),
-            ("المراجعة النهائية", max(ex_d - timedelta(days=1), today), True),
-        ]
-        steps = sorted([s for s in steps if s[1] <= ex_d], key=lambda s: s[1])
-        items = "".join(
-            f"<div class='tl-item{' final' if fin else ''}'>"
-            f"<div class='tl-title'>{name}</div>"
-            f"<div class='tl-date'>{d.strftime('%d-%m-%Y')}، {rel_label(d, today)}</div></div>"
-            for name, d, fin in steps
-        )
-        card(f"<h3>جدول المراجعات المقترح</h3><div class='tl'>{items}</div>")
-
-# --- الطوارئ ---
-with tab5:
-    st.subheader("وضع الطوارئ والإنقاذ السريع")
-    if st.button("توليد ورقة الملخص الشامل ليلة الامتحان"):
-        st.warning("تم تلخيص المحاضرات في ورقة قوانين مركزة.")
-        st.session_state.xp += 30
+# --- تبويب 1: الإدخال والمحاضرة التلقائية ---
